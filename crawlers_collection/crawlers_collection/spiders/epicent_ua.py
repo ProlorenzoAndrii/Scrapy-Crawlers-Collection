@@ -32,7 +32,8 @@ class EpicentrSpider(scrapy.Spider):
         for prod in resp.xpath("//a[@class='card__photo']/@href").getall():
             yield scrapy.Request(url=prod,
                                  callback=self.parse_product,
-                                 priority=10)
+                                 priority=10,
+                                 cb_kwargs=dict(category_name=category_name))
 
         payload = json.dumps({"location": "/ua/shop/unitazy-i-kompakty/",
                               "lang": "ua",
@@ -47,11 +48,12 @@ class EpicentrSpider(scrapy.Spider):
                              body=payload,
                              callback=self.parse)
 
-    def parse_product(self, response):
+    def parse_product(self, response, category_name):
         name = response.xpath("//h1[@class='p-header__title nc']/text()").get()
         price = response.xpath("//div[@class='p-price__main']/@title").get()
 
         yield {
             "name": name,
-            "price": price
+            "price": price,
+            "category_name": category_name
         }
