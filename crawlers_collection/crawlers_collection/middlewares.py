@@ -3,10 +3,12 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-from scrapy import signals
+import cloudscraper
 
+from scrapy import signals
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
+from scrapy.http import HtmlResponse
 
 
 class CrawlersCollectionSpiderMiddleware:
@@ -101,3 +103,28 @@ class CrawlersCollectionDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+class CloudFlareBypassMiddleware(object):
+    def process_request(self, request, spider):
+        return None
+        # only process tagged request or delete this if you want all
+
+    def process_response(self, request, response, spider):
+        if 'cached' not in response.flags:
+            scraper = cloudscraper.create_scraper(
+                browser={
+                    'browser': 'firefox',
+                    'platform': 'windows',
+                    'mobile': False
+                },
+            )
+            r = scraper.get(request.url, headers=request.headers.to_unicode_dict())
+            response = HtmlResponse(
+                url=r.url,
+                body=r.text,
+                encoding='utf8'
+            )
+            return response
+        else:
+            return response
